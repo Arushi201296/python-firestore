@@ -18,12 +18,13 @@ from google.api_core import retry as retries  # type: ignore
 
 from google.cloud.firestore_v1 import _helpers
 from google.cloud.firestore_v1.base_batch import BaseBatch
+from google.cloud.firestore_v1.types.firestore import BatchWriteResponse
 
 
 class BulkWriteBatch(BaseBatch):
-    """Accumulate write operations to be sent in a batch. Use this over `WriteBatch`
-    for higher volumes (e.g., via `BulkWriter`) and when the order of operations
-    within a given batch is unimportant.
+    """Accumulate write operations to be sent in a batch. Use this over
+    `WriteBatch` for higher volumes (e.g., via `BulkWriter`) and when the order
+    of operations within a given batch is unimportant.
 
     Because the order in which individual write operations land in the database
     is not guaranteed, `batch_write` RPCs can never contain multiple operations
@@ -46,7 +47,7 @@ class BulkWriteBatch(BaseBatch):
 
     def commit(
         self, retry: retries.Retry = gapic_v1.method.DEFAULT, timeout: float = None
-    ):
+    ) -> BatchWriteResponse:
         """Writes the changes accumulated in this batch.
 
         Write operations are not guaranteed to be applied in order and must not
@@ -60,24 +61,25 @@ class BulkWriteBatch(BaseBatch):
                 system-specified value.
 
         Returns:
-            List[:class:`google.cloud.proto.firestore.v1.write.BatchWriteResult`, ...]:
-            The write results corresponding to the changes committed, returned
-            in the same order as the changes were applied to this batch. A
-            write result contains an ``update_time`` field.
+            :class:`google.cloud.proto.firestore.v1.write.BatchWriteResponse`:
+            Container holding the write results corresponding to the changes
+            committed, returned in the same order as the changes were applied to
+            this batch. An individual write result contains an ``update_time``
+            field.
         """
         request, kwargs = self._prep_commit(retry, timeout)
 
-        save_response = self._client._firestore_api.batch_write(
+        _api = self._client._firestore_api
+        save_response: BatchWriteResponse = _api.batch_write(
             request=request, metadata=self._client._rpc_metadata, **kwargs,
         )
 
         self._write_pbs = []
-        self.write_results = results = list(save_response.write_results)
+        self.write_results = list(save_response.write_results)
 
-        return results
+        return save_response
 
     def _prep_commit(self, retry: retries.Retry, timeout: float):
-        """Shared setup for async/sync :meth:`write`."""
         request = {
             "database": self._client._database_string,
             "writes": self._write_pbs,

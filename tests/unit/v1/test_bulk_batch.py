@@ -63,9 +63,9 @@ class TestBulkWriteBatch(unittest.TestCase):
         batch.delete(document2)
         write_pbs = batch._write_pbs[::]
 
-        write_results = batch.commit(**kwargs)
-        self.assertEqual(write_results, list(write_response.write_results))
-        self.assertEqual(batch.write_results, write_results)
+        resp = batch.commit(**kwargs)
+        self.assertEqual(resp.write_results, list(write_response.write_results))
+        self.assertEqual(batch.write_results, resp.write_results)
         # Make sure batch has no more "changes".
         self.assertEqual(batch._write_pbs, [])
 
